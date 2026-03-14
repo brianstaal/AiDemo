@@ -20,11 +20,12 @@ IConfigurationRoot configuration = new ConfigurationBuilder()
     .Build();
 
 var lmStudioUrl = configuration["LmStudio:Url"];
+var lmStudioModel = configuration["LmStudio:Model"];
 var lmStudioToken = configuration["LmStudio:Token"];
 
-if (string.IsNullOrEmpty(lmStudioToken) || string.IsNullOrEmpty(lmStudioUrl))
+if (string.IsNullOrEmpty(lmStudioUrl) || string.IsNullOrEmpty(lmStudioModel) || string.IsNullOrEmpty(lmStudioToken))
 {
-    Console.WriteLine("LmStudio token or url is not set. Please set it in the configuration.");
+    Console.WriteLine("LM Studio url, model or token is not set. Please set it in the configuration & secrets.");
     return;
 }
 
@@ -35,16 +36,17 @@ var files = Directory.GetFiles(appDataPath);
 
 var instructionContent = File.ReadAllText(instructionFile);
 
-var instruction = new Instruction("google/gemma-3-27b", instructionContent, 8000);
+var instruction = new Instruction(lmStudioModel, instructionContent, 8000);
 foreach (var file in files)
 {
     await instruction.AddAttachment(file);
 }
 
 var json = JsonSerializer.Serialize(instruction);
+
+// For debug
 //var jsonText = new JsonText(json);
 //AnsiConsole.Write(jsonText);
-
 
 var options = new RestClientOptions(lmStudioUrl)
 {
