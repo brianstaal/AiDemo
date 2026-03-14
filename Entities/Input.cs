@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
-namespace AiDemo;
+
+namespace AiDemo.Entities;
 
 public class Input(string type = "text")
 {

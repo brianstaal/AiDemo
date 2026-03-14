@@ -1,8 +1,8 @@
-using AiDemo;
-using Spectre.Console;
+using AiDemo.Entities;
+using AiDemo.Implementations;
 using Microsoft.Extensions.Configuration;
-using System.Text.Json;
 using RestSharp;
+using Spectre.Console;
 using Spectre.Console.Json;
 
 AnsiConsole.Clear();
@@ -11,7 +11,7 @@ AnsiConsole.Clear();
 AnsiConsole.Write(
     new FigletText("AI Demo App")
         .LeftJustified()
-        .Color(Color.Lime));
+        .Color(Color.Purple));
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
     .AddJsonFile("appsettings.json")
@@ -20,6 +20,7 @@ IConfigurationRoot configuration = new ConfigurationBuilder()
     .Build();
 
 var lmStudioUrl = configuration["LmStudio:Url"];
+var lmStudioClient = configuration["LmStudio:Client"];
 var lmStudioModel = configuration["LmStudio:Model"];
 var lmStudioToken = configuration["LmStudio:Token"];
 
@@ -42,34 +43,35 @@ foreach (var file in files)
     await instruction.AddAttachment(file);
 }
 
-var json = JsonSerializer.Serialize(instruction);
-
 // For debug
 //var jsonText = new JsonText(json);
 //AnsiConsole.Write(jsonText);
 
-var options = new RestClientOptions(lmStudioUrl)
-{
-    Timeout = TimeSpan.FromSeconds(120)
-};
-var client = new RestClient(options);
-var request = new RestRequest("/api/v1/chat", Method.Post);
-request.AddHeader("Content-Type", "application/json");
+AnsiConsole.MarkupLine("[green]Starting....[/]");
 
-request.AddHeader("Authorization", $"Bearer {lmStudioToken}");
-var body = json;
+string? responseContent;
 
-request.AddStringBody(body, DataFormat.Json);
-RestResponse response = await client.ExecuteAsync(request);
-Console.WriteLine(response.Content);
-if (!response.IsSuccessful)
+switch (lmStudioClient)
 {
-    Console.WriteLine($"Request failed with status code: {response.StatusCode}");
-    return;
+    case "OpenAI":
+        var openAiEngine = new OpenAiEngine(lmStudioUrl, lmStudioToken);
+        responseContent = await openAiEngine.SendRequestAsync(instruction);
+        break;
+
+
+    default:
+        var lmEngine = new LmStudioEngine(lmStudioUrl, lmStudioToken);
+        responseContent = await lmEngine.SendRequestAsync(instruction);
+        break;
 }
-if (!string.IsNullOrEmpty(response.Content))
+
+if (!string.IsNullOrEmpty(responseContent))
 {
-    var jsonText = new JsonText(response.Content);
+    var jsonText = new JsonText(responseContent);
     AnsiConsole.Write(jsonText);
+}
+else
+{
+    AnsiConsole.MarkupLine("[red]No response content received.[/]");
 }
 

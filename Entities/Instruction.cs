@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace AiDemo;
+namespace AiDemo.Entities;
 
 public class Instruction
 {
